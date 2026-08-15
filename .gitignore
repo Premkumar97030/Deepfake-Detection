@@ -1,0 +1,21 @@
+VENV/
+venv/
+__pycache__/
+*.pyc
+.env
+*.log
+
+# Datasets
+datasets/
+real_world_test/
+
+# Model weights
+weights/
+*.pth
+*.pt
+*.h5
+*.keras
+
+# Temporary files
+*.tmp
+*.temp
