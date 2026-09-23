@@ -1,0 +1,12 @@
+{
+  "name": "deepfake-detector-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DeepFake Detection Platform - Fullstack",
+  "scripts": {
+    "dev": "node run-dev.js",
+    "dev:backend": "node backend/run.js",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend"
+  }
+}

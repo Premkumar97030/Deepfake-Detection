@@ -1,0 +1,37 @@
+# Environments & Virtualenv
+venv/
+backend/venv/
+.venv/
+env/
+ENV/
+
+# Node dependencies & builds
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.vite/
+
+# Python cache & artifacts
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.temp/
+tmp/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.production
