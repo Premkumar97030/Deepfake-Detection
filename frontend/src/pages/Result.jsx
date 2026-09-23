@@ -35,7 +35,17 @@ const labels = {
 function Result() {
   const location = useLocation();
   const { file, mediaType = "image", result } = location.state || {};
-  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+
+  // Generate stable blob URL for preview
+  const previewUrl = useMemo(() => {
+    if (file instanceof Blob || file instanceof File) {
+      return URL.createObjectURL(file);
+    }
+    if (typeof file === "string") {
+      return file;
+    }
+    return null;
+  }, [file]);
 
   const [viewMode, setViewMode] = useState("raw"); // 'raw' | 'ela'
   const [elaUrl, setElaUrl] = useState(null);
@@ -43,15 +53,24 @@ function Result() {
   const [copied, setCopied] = useState(false);
   const reportRef = useRef(null);
 
-  useEffect(() => () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    if (elaUrl) URL.revokeObjectURL(elaUrl);
-  }, [previewUrl, elaUrl]);
+  // Revoke blob URL ONLY when the Result page component is unmounted
+  useEffect(() => {
+    return () => {
+      if (previewUrl && typeof previewUrl === "string" && previewUrl.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(previewUrl);
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, [previewUrl]);
 
   // Compute Error Level Analysis (ELA) artifact noise map client-side
   useEffect(() => {
     if (!previewUrl || mediaType !== "image") return;
 
+    let isMounted = true;
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
@@ -65,6 +84,7 @@ function Result() {
         // Convert to recompressed JPEG
         const recompressed = new Image();
         recompressed.onload = () => {
+          if (!isMounted) return;
           const compCanvas = document.createElement("canvas");
           const compCtx = compCanvas.getContext("2d");
           compCanvas.width = img.width;
@@ -76,28 +96,32 @@ function Result() {
           const outData = ctx.createImageData(canvas.width, canvas.height);
 
           // Calculate amplified difference
-          const scale = 14;
+          const scale = 16;
           for (let i = 0; i < origData.data.length; i += 4) {
             const rDiff = Math.abs(origData.data[i] - compData.data[i]) * scale;
             const gDiff = Math.abs(origData.data[i + 1] - compData.data[i + 1]) * scale;
             const bDiff = Math.abs(origData.data[i + 2] - compData.data[i + 2]) * scale;
 
             // Generate cyber-forensic false-color map
-            outData.data[i] = Math.min(255, rDiff * 1.5);
+            outData.data[i] = Math.min(255, rDiff * 1.6);
             outData.data[i + 1] = Math.min(255, gDiff + bDiff);
-            outData.data[i + 2] = Math.min(255, bDiff * 2);
+            outData.data[i + 2] = Math.min(255, bDiff * 2.2);
             outData.data[i + 3] = 255;
           }
 
           ctx.putImageData(outData, 0, 0);
           setElaUrl(canvas.toDataURL("image/png"));
         };
-        recompressed.src = canvas.toDataURL("image/jpeg", 0.72);
-      } catch {
-        setElaUrl(null);
+        recompressed.src = canvas.toDataURL("image/jpeg", 0.70);
+      } catch (err) {
+        console.warn("ELA calculation skipped:", err);
       }
     };
     img.src = previewUrl;
+
+    return () => {
+      isMounted = false;
+    };
   }, [previewUrl, mediaType]);
 
   const handleDownloadPdf = () => {
@@ -326,11 +350,20 @@ function Result() {
                 <div className="media-viewport-compact">
                   {previewUrl ? (
                     mediaType === "image" ? (
-                      <img
-                        src={viewMode === "ela" && elaUrl ? elaUrl : previewUrl}
-                        alt="Analyzed media preview"
-                        className="preview-img-compact"
-                      />
+                      <div className="preview-image-stack">
+                        <img
+                          src={previewUrl}
+                          alt="Original media preview"
+                          className={`preview-img-compact ${viewMode === "raw" ? "active-layer" : "hidden-layer"}`}
+                        />
+                        {elaUrl && (
+                          <img
+                            src={elaUrl}
+                            alt="ELA artifact analysis preview"
+                            className={`preview-img-compact ${viewMode === "ela" ? "active-layer" : "hidden-layer"}`}
+                          />
+                        )}
+                      </div>
                     ) : (
                       <video src={previewUrl} controls className="preview-vid-compact" />
                     )
