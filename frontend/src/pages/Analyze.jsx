@@ -102,6 +102,100 @@ function Analyze() {
             onFileSelect={setFile}
           />
 
+          {/* 1-Click Demo Samples */}
+          <div className="demo-samples-section">
+            <span className="demo-samples-label">Or test with demo preset:</span>
+            <div className="demo-samples-pills">
+              <button
+                type="button"
+                className="demo-sample-btn real"
+                onClick={async () => {
+                  setMediaType("image");
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 400;
+                  canvas.height = 400;
+                  const ctx = canvas.getContext("2d");
+                  const grad = ctx.createLinearGradient(0, 0, 400, 400);
+                  grad.addColorStop(0, "#1e3c72");
+                  grad.addColorStop(1, "#2a5298");
+                  ctx.fillStyle = grad;
+                  ctx.fillRect(0, 0, 400, 400);
+                  ctx.fillStyle = "#ffffff";
+                  ctx.font = "bold 24px sans-serif";
+                  ctx.fillText("Natural Camera Capture", 60, 200);
+                  canvas.toBlob((blob) => {
+                    const sampleFile = new File([blob], "sample_camera_real.jpg", { type: "image/jpeg" });
+                    setFile(sampleFile);
+                  }, "image/jpeg", 0.95);
+                }}
+              >
+                <span>Authentic Photo Sample</span>
+              </button>
+
+              <button
+                type="button"
+                className="demo-sample-btn ai"
+                onClick={async () => {
+                  setMediaType("image");
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 400;
+                  canvas.height = 400;
+                  const ctx = canvas.getContext("2d");
+                  const grad = ctx.createRadialGradient(200, 200, 20, 200, 200, 200);
+                  grad.addColorStop(0, "#ff007f");
+                  grad.addColorStop(0.5, "#7928ca");
+                  grad.addColorStop(1, "#00f0ff");
+                  ctx.fillStyle = grad;
+                  ctx.fillRect(0, 0, 400, 400);
+                  ctx.fillStyle = "#ffffff";
+                  ctx.font = "bold 24px sans-serif";
+                  ctx.fillText("AI Diffusion Synthesis", 65, 200);
+                  canvas.toBlob((blob) => {
+                    const sampleFile = new File([blob], "sample_ai_gen.png", { type: "image/png" });
+                    setFile(sampleFile);
+                  }, "image/png");
+                }}
+              >
+                <span>AI GenAI Sample</span>
+              </button>
+
+              <button
+                type="button"
+                className="demo-sample-btn cgi"
+                onClick={async () => {
+                  setMediaType("image");
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 400;
+                  canvas.height = 400;
+                  const ctx = canvas.getContext("2d");
+                  ctx.fillStyle = "#0c1024";
+                  ctx.fillRect(0, 0, 400, 400);
+                  ctx.strokeStyle = "#9d4edd";
+                  ctx.lineWidth = 4;
+                  for (let i = 20; i < 400; i += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, 400);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(400, i);
+                    ctx.stroke();
+                  }
+                  ctx.fillStyle = "#ffffff";
+                  ctx.font = "bold 24px sans-serif";
+                  ctx.fillText("3D CGI Mesh Wireframe", 60, 200);
+                  canvas.toBlob((blob) => {
+                    const sampleFile = new File([blob], "sample_cgi_render.png", { type: "image/png" });
+                    setFile(sampleFile);
+                  }, "image/png");
+                }}
+              >
+                <span>CGI Render Sample</span>
+              </button>
+            </div>
+          </div>
+
           <div className="analyze-features-row">
             <div className="analyze-feature-item">
               <ShieldCheck size={18} className="feat-icon emerald" />

@@ -1,13 +1,16 @@
-import { useRef, useState } from "react";
-import { Upload, Image as ImageIcon, Video as VideoIcon, X, CheckCircle2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, Image as ImageIcon, Video as VideoIcon, X, CheckCircle2, Link as LinkIcon, Clipboard, Sparkles } from "lucide-react";
 
-function UploadBox({ mediaType, onFileSelect }) {
+function UploadBox({ mediaType, onFileSelect, onSampleSelect }) {
   const inputRef = useRef(null);
 
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlInputValue, setUrlInputValue] = useState("");
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
 
   const handleFile = (selectedFile) => {
     setError("");
@@ -22,6 +25,48 @@ function UploadBox({ mediaType, onFileSelect }) {
     setFile(selectedFile);
     setPreviewUrl(url);
     onFileSelect(selectedFile);
+  };
+
+  // Clipboard Paste Support (Ctrl + V)
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            const pasteFile = new File([blob], `clipboard_image_${Date.now()}.png`, { type: blob.type });
+            handleFile(pasteFile);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, []);
+
+  const handleFetchUrl = async () => {
+    if (!urlInputValue.trim()) return;
+    setIsLoadingUrl(true);
+    setError("");
+    try {
+      const resp = await fetch(urlInputValue);
+      if (!resp.ok) throw new Error("Could not fetch media from URL.");
+      const blob = await resp.blob();
+      const ext = blob.type.split("/")[1] || "png";
+      const fetchedFile = new File([blob], `url_ingest_${Date.now()}.${ext}`, { type: blob.type });
+      handleFile(fetchedFile);
+      setShowUrlInput(false);
+      setUrlInputValue("");
+    } catch (err) {
+      setError("Failed to load media from URL. Please check the link or CORS policy: " + err.message);
+    } finally {
+      setIsLoadingUrl(false);
+    }
   };
 
   const handleInputChange = (event) => {
@@ -86,17 +131,56 @@ function UploadBox({ mediaType, onFileSelect }) {
             Drag and drop your file here, or click to browse. All {mediaType === "image" ? "image" : "video"} formats are supported.
           </p>
 
-          <button
-            type="button"
-            className="browse-button-clean"
-            onClick={(e) => {
-              e.stopPropagation();
-              inputRef.current?.click();
-            }}
-          >
-            <Upload size={16} />
-            <span>Choose File</span>
-          </button>
+          <div className="upload-actions-row">
+            <button
+              type="button"
+              className="browse-button-clean"
+              onClick={(e) => {
+                e.stopPropagation();
+                inputRef.current?.click();
+              }}
+            >
+              <Upload size={16} />
+              <span>Choose File</span>
+            </button>
+
+            <button
+              type="button"
+              className="url-button-clean"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowUrlInput(!showUrlInput);
+              }}
+            >
+              <LinkIcon size={15} />
+              <span>Paste URL</span>
+            </button>
+          </div>
+
+          {showUrlInput && (
+            <div className="url-input-container" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="url"
+                placeholder="https://example.com/sample.jpg"
+                value={urlInputValue}
+                onChange={(e) => setUrlInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleFetchUrl()}
+              />
+              <button
+                type="button"
+                className="fetch-url-btn"
+                onClick={handleFetchUrl}
+                disabled={isLoadingUrl || !urlInputValue}
+              >
+                {isLoadingUrl ? "Fetching..." : "Load"}
+              </button>
+            </div>
+          )}
+
+          <div className="paste-hint-pill">
+            <Clipboard size={12} />
+            <span>Pro tip: Press <strong>Ctrl + V</strong> anywhere to paste an image directly from your clipboard</span>
+          </div>
 
           <div className="format-pills">
             {mediaType === "image" ? (
